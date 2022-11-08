@@ -9,13 +9,17 @@ use urlencoding::decode;
 use std::time::SystemTime;
 use chrono;
 use url::Url;
+use log::{info, warn};
+use std::env;
 
 const ROOT_DIR: &str = ".";
 const INDEX_FILE: &str = "index.html";
-
+const PORT: &str = "8081";
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8081").unwrap();
+    let listener = TcpListener::bind(format!("{}{}", "0.0.0.0:", PORT)).unwrap();
+    println!("{}{}", "Server start on port: ", PORT);
+    println!("{}",std::env::current_dir().unwrap().display());
     let pool = ThreadPool::new(10);
 
     for stream in listener.incoming() {
@@ -29,7 +33,7 @@ fn main() {
 
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
-    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let request_line = buf_reader.lines().next().unwrap_or(Result::Ok("".to_string())).unwrap_or_default();
 
     let content;
     let status;
@@ -38,9 +42,9 @@ fn handle_connection(mut stream: TcpStream) {
     let resp_connection = "n.gureev connection";
 
     let (method, url, direct_path) = clear_url(request_line.clone());
-    println!("{}", request_line);
+    // println!("{}", request_line);
     if method != "GET" && method != "HEAD" {
-        println!("{}", method);
+        //println!("{}", method);
         status = "HTTP/1.1 405 METHOD NOT ALLOWED";
         let response = format!("{status}\r\n\
         Server: {resp_server}\r\n\
@@ -51,19 +55,20 @@ fn handle_connection(mut stream: TcpStream) {
     }
 
     let fullUrl = ROOT_DIR.to_string() + &url;
+    println!("{}", fullUrl);
     if fs::metadata(&fullUrl).is_ok() {
         content = fs::read(&fullUrl).unwrap();
         status = "HTTP/1.1 200 OK";
     } else {
-        content = fs::read("src/not_found.html").unwrap();
+        content = fs::read("./static/not_found.html").unwrap();
         if direct_path {
             status = "HTTP/1.1 404 NOT FOUND";
         } else {
             status = "HTTP/1.1 403 FORBIDDEN";
         }
     }
-    println!("{}", fullUrl);
-    println!("{}", status);
+    // println!("{}", fullUrl);
+    // println!("{}", status);
 
     let cont_length = content.len();
     let cont_type = get_mimotype(url);
@@ -82,7 +87,7 @@ fn handle_connection(mut stream: TcpStream) {
 
 fn clear_url(req :String) -> (String, String, bool) {
     let parts : Vec<&str> = req.split(" ").collect();
-    println!("{:?}", parts);
+    // println!("{:?}", parts);
     if parts.len() != 3 {
         return ("".to_string(), "".to_string(), true);
     }
