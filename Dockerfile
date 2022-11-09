@@ -31,7 +31,7 @@ FROM alpine:3.16.0 AS runtime
 
 # Copy application binary from builder image
 COPY --from=builder /etc/rust/target/x86_64-unknown-linux-musl/release/rust /usr/local/bin
-COPY --from=builder /etc/rust/static /
+COPY --from=builder /etc/rust/static /static/
 
 EXPOSE 8081
 

@@ -62,7 +62,7 @@ fn handle_connection(mut stream: TcpStream) {
     } else {
         content = fs::read("./static/not_found.html").unwrap();
         if direct_path {
-            status = "HTTP/1.1 404 NOT FOUND";
+        status = "HTTP/1.1 404 NOT FOUND";
         } else {
             status = "HTTP/1.1 403 FORBIDDEN";
         }
